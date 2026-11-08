@@ -39,7 +39,7 @@ jobs:
 
       - name: Run Pytest with Coverage
         run: |
-          pytest --cov=app tests/ -v
+          python -m pytest --cov=app tests/ -v
 
   docker:
     name: Docker Container Build

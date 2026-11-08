@@ -18,3 +18,7 @@ Loaded custom feature plugin: sqrt from sqrt.py
 {"ts": 1794151077.0982475, "level": "INFO", "service": "calculator", "msg": "deployed v1.1", "bug": true}
 {"ts": 1794151077.1127036, "level": "INFO", "service": "calculator", "msg": "rolled back to v1.0"}
 {"ts": 1794151077.1204464, "level": "INFO", "service": "calculator", "op": "sqrt", "a": 25.0, "b": 0.0, "result": 5.0, "version": "1.0"}
+Loaded custom feature plugin: sqrt from sqrt.py
+{"ts": 1794151383.1262574, "level": "INFO", "service": "calculator", "op": "mul", "a": 85.0, "b": 63.0, "result": 5355.0, "version": "1.0"}
+{"ts": 1794151387.2481315, "level": "INFO", "service": "calculator", "op": "sqrt", "a": 5355.0, "b": 0.0, "result": 73.1778655059028, "version": "1.0"}
+Loaded custom feature plugin: sqrt from sqrt.py
