@@ -58,3 +58,4 @@ jobs:
           context: .
           push: false
           tags: ashwithgoud200/calculator-app:latest
+

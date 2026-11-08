@@ -8,3 +8,13 @@ Loaded custom feature plugin: sqrt from sqrt.py
 {"ts": 1794150521.3233922, "level": "INFO", "service": "calculator", "msg": "deployed v1.1", "bug": true}
 {"ts": 1794150521.3338363, "level": "INFO", "service": "calculator", "msg": "rolled back to v1.0"}
 {"ts": 1794150521.3396091, "level": "INFO", "service": "calculator", "op": "sqrt", "a": 25.0, "b": 0.0, "result": 5.0, "version": "1.0"}
+Loaded custom feature plugin: sqrt from sqrt.py
+{"ts": 1794151077.026846, "level": "INFO", "service": "calculator", "op": "add", "a": 10.0, "b": 5.0, "result": 15.0, "version": "1.0"}
+{"ts": 1794151077.0327225, "level": "INFO", "service": "calculator", "op": "sub", "a": 10.0, "b": 4.0, "result": 6.0, "version": "1.0"}
+{"ts": 1794151077.037344, "level": "INFO", "service": "calculator", "op": "mul", "a": 3.0, "b": 7.0, "result": 21.0, "version": "1.0"}
+{"ts": 1794151077.0438666, "level": "INFO", "service": "calculator", "op": "div", "a": 20.0, "b": 4.0, "result": 5.0, "version": "1.0"}
+{"ts": 1794151077.0503778, "level": "INFO", "service": "calculator", "op": "pow", "a": 2.0, "b": 3.0, "result": 8.0, "version": "1.0"}
+{"ts": 1794151077.0612073, "level": "WARN", "service": "calculator", "op": "div", "msg": "division by zero (user input)"}
+{"ts": 1794151077.0982475, "level": "INFO", "service": "calculator", "msg": "deployed v1.1", "bug": true}
+{"ts": 1794151077.1127036, "level": "INFO", "service": "calculator", "msg": "rolled back to v1.0"}
+{"ts": 1794151077.1204464, "level": "INFO", "service": "calculator", "op": "sqrt", "a": 25.0, "b": 0.0, "result": 5.0, "version": "1.0"}

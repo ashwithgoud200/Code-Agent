@@ -73,3 +73,11 @@ def test_dynamic_feature_sqrt():
         res = client.get("/calc/sqrt?a=25")
         assert res.status_code == 200
         assert res.json()["result"] == 5.0
+
+
+def test_ui_root_endpoint_serves_html():
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers.get("content-type", "")
+    assert "OpsPilot Calculator" in resp.text
+

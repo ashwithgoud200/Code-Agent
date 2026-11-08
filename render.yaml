@@ -1,0 +1,15 @@
+# Render Blueprint specification for live Calculator Application
+# Repo: https://github.com/ashwithgoud200/Code-Agent
+
+services:
+  - type: web
+    name: calculator-live-app
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8100"

@@ -23,6 +23,7 @@ import time
 import uuid
 from typing import Any
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import FileResponse
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -94,6 +95,24 @@ app = FastAPI(
     description="Target production application for DevOps AI Multi-Agent automation & monitoring.",
     version="1.0.0",
 )
+
+STATIC_DIR = os.path.join(ROOT, "static")
+if os.path.isdir(STATIC_DIR):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", summary="Interactive Calculator Web UI")
+def serve_calculator_ui():
+    index_file = os.path.join(ROOT, "static", "index.html")
+    if os.path.isfile(index_file):
+        return FileResponse(index_file)
+    return {
+        "status": "ok",
+        "service": "calculator",
+        "version": STATE["version"],
+        "endpoints": ["/calc/{op}", "/health", "/metrics", "/docs"],
+    }
 
 
 @app.middleware("http")
@@ -196,3 +215,4 @@ def rollback():
 def reload_features():
     _load_dynamic_features()
     return {"status": "reloaded", "active_operations": sorted(list(OPS.keys()))}
+
