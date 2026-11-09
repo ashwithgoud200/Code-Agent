@@ -127,3 +127,17 @@ def test_remote_fault_cpu_and_memory():
     assert mem_res.json()["status"] == "started"
 
 
+def test_admin_deploy_feature_dynamically():
+    snippet = 'OPS["cube"] = lambda a: a ** 3'
+    resp = client.post("/admin/features/deploy", json={
+        "op": "cube",
+        "code_snippet": snippet,
+        "feature_name": "Cube",
+        "version": "1.2.0"
+    })
+    assert resp.status_code == 200
+    assert "cube" in resp.json()["active_operations"]
+    assert client.get("/calc/cube?a=3").json()["result"] == 27.0
+
+
+

@@ -25,6 +25,7 @@ import uuid
 from typing import Any
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -235,6 +236,50 @@ def rollback():
 def reload_features():
     _load_dynamic_features()
     return {"status": "reloaded", "active_operations": sorted(list(OPS.keys()))}
+
+
+class FeatureDeployPayload(BaseModel):
+    op: str
+    code_snippet: str
+    feature_name: str | None = None
+    version: str | None = None
+
+
+@app.post("/admin/features/deploy", summary="Deploy a new feature operator dynamically")
+def admin_deploy_feature(payload: FeatureDeployPayload):
+    op_clean = payload.op.lower().strip()
+    deploy_env = {"OPS": OPS, "math": math, "ZeroDivisionError": ZeroDivisionError, "ValueError": ValueError}
+    try:
+        exec(payload.code_snippet, deploy_env)
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to activate operator '{op_clean}': {exc}")
+
+    # Persist feature file to disk in features/ directory
+    features_dir = os.path.join(ROOT, "features")
+    os.makedirs(features_dir, exist_ok=True)
+    feature_file = os.path.join(features_dir, f"{op_clean}.py")
+    try:
+        with open(feature_file, "w", encoding="utf-8") as f:
+            f.write(
+                f'"""{payload.feature_name or op_clean} dynamic feature plugin."""\n'
+                f'import math\n\n'
+                f'{payload.code_snippet}\n'
+            )
+    except Exception as e:
+        logger.warning("Could not persist feature file: %s", e)
+
+    if payload.version:
+        STATE["version"] = payload.version
+        STATE["history"].append({"version": payload.version, "ts": time.time(), "feature": op_clean})
+
+    log_event("INFO", msg=f"Feature {op_clean} deployed to live microservice", op=op_clean)
+    return {
+        "status": "deployed",
+        "op": op_clean,
+        "feature_name": payload.feature_name,
+        "version": STATE["version"],
+        "active_operations": sorted(list(OPS.keys())),
+    }
 
 
 # =========================================================================
