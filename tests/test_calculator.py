@@ -89,3 +89,41 @@ def test_ui_root_endpoint_serves_html():
     assert "text/html" in resp.headers.get("content-type", "")
     assert "OpsPilot Calculator" in resp.text
 
+
+def test_remote_fault_latency_and_reset():
+    resp = client.post("/admin/fault/latency?seconds=0.05")
+    assert resp.status_code == 200
+    assert STATE["injected_latency"] == 0.05
+    assert client.get("/admin/fault/status").json()["injected_latency"] == 0.05
+    assert client.get("/health").json()["status"] == "degraded"
+
+    reset_resp = client.post("/admin/fault/reset")
+    assert reset_resp.status_code == 200
+    assert STATE["injected_latency"] == 0.0
+    assert client.get("/health").json()["status"] == "ok"
+
+
+def test_remote_fault_crash_mode():
+    arm_resp = client.post("/admin/fault/crash?active=true&message=Simulated+Chaos+Crash")
+    assert arm_resp.status_code == 200
+    assert STATE["crash_mode"] is True
+
+    calc_resp = client.get("/calc/add?a=2&b=3")
+    assert calc_resp.status_code == 500
+    assert "Simulated Chaos Crash" in calc_resp.json()["detail"]
+
+    client.post("/admin/fault/reset")
+    assert STATE["crash_mode"] is False
+    assert client.get("/calc/add?a=2&b=3").status_code == 200
+
+
+def test_remote_fault_cpu_and_memory():
+    cpu_res = client.post("/admin/fault/cpu?duration_seconds=1&num_threads=1")
+    assert cpu_res.status_code == 200
+    assert cpu_res.json()["status"] == "started"
+
+    mem_res = client.post("/admin/fault/memory?megabytes=10&duration_seconds=1")
+    assert mem_res.status_code == 200
+    assert mem_res.json()["status"] == "started"
+
+

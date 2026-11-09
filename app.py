@@ -19,6 +19,7 @@ import logging
 import math
 import os
 import sys
+import threading
 import time
 import uuid
 from typing import Any
@@ -59,6 +60,8 @@ STATE: dict[str, Any] = {
     "bug": False,
     "history": [{"version": "1.0", "ts": time.time()}],
     "injected_latency": 0.0,
+    "crash_mode": False,
+    "crash_message": "Unhandled runtime crash in Calculator service",
 }
 
 
@@ -137,6 +140,13 @@ def calculate(op: str, a: float, b: float = 0.0):
     if latency > 0:
         time.sleep(latency)
 
+    # Crash mode simulation check
+    if STATE.get("crash_mode"):
+        crash_msg = str(STATE.get("crash_message", "Unhandled runtime crash in Calculator service"))
+        log_event("ERROR", op=op, msg=crash_msg)
+        REQ_TOTAL.labels(op, "error").inc()
+        raise HTTPException(500, crash_msg)
+
     # Bug simulation check
     if STATE.get("bug") and op == "div":
         log_event("ERROR", op=op, msg=f"v{STATE['version']} regression: div handler crashed")
@@ -173,12 +183,22 @@ def calculate(op: str, a: float, b: float = 0.0):
 
 @app.get("/health", summary="Liveness & Readiness probe")
 def health():
+    is_degraded = (
+        bool(STATE.get("bug"))
+        or bool(STATE.get("crash_mode"))
+        or float(STATE.get("injected_latency", 0.0)) > 0
+    )
     return {
-        "status": "degraded" if STATE.get("bug") else "ok",
+        "status": "degraded" if is_degraded else "ok",
         "service": "calculator",
         "version": STATE["version"],
         "active_operations": len(OPS),
         "operations": sorted(list(OPS.keys())),
+        "faults": {
+            "bug": STATE.get("bug", False),
+            "crash_mode": STATE.get("crash_mode", False),
+            "injected_latency": STATE.get("injected_latency", 0.0),
+        },
     }
 
 
@@ -215,4 +235,91 @@ def rollback():
 def reload_features():
     _load_dynamic_features()
     return {"status": "reloaded", "active_operations": sorted(list(OPS.keys()))}
+
+
+# =========================================================================
+# Remote Fault Injection & Chaos Endpoints
+# =========================================================================
+
+def _run_cpu_stress(duration_seconds: int = 15, num_threads: int = 2):
+    stop_event = threading.Event()
+
+    def _worker():
+        end = time.time() + duration_seconds
+        while not stop_event.is_set() and time.time() < end:
+            _ = [i * i for i in range(1000)]
+
+    threads = [threading.Thread(target=_worker, daemon=True) for _ in range(min(num_threads, 4))]
+    for t in threads:
+        t.start()
+
+
+def _run_memory_stress(megabytes: int = 150, duration_seconds: int = 15):
+    def _worker():
+        try:
+            chunks = [bytearray(1024 * 1024) for _ in range(min(megabytes, 300))]
+            time.sleep(duration_seconds)
+            del chunks
+        except Exception:
+            pass
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+
+@app.get("/admin/fault/status", summary="Get active fault injection state")
+def fault_status():
+    return {
+        "status": "ok",
+        "version": STATE["version"],
+        "bug": STATE.get("bug", False),
+        "crash_mode": STATE.get("crash_mode", False),
+        "crash_message": STATE.get("crash_message", ""),
+        "injected_latency": STATE.get("injected_latency", 0.0),
+    }
+
+
+@app.post("/admin/fault/latency", summary="Inject artificial latency")
+def set_fault_latency(seconds: float = 0.45):
+    delay = max(0.0, min(float(seconds), 10.0))
+    STATE["injected_latency"] = delay
+    log_event("WARN", msg=f"fault latency updated: {delay}s")
+    return {"status": "updated", "injected_latency": delay}
+
+
+@app.post("/admin/fault/crash", summary="Arm or disarm unhandled crash mode")
+def set_fault_crash(active: bool = True, message: str = "Unhandled runtime crash in Calculator service"):
+    STATE["crash_mode"] = bool(active)
+    STATE["crash_message"] = str(message)
+    log_event("WARN", msg=f"crash mode armed={active}: {message}")
+    return {"status": "updated", "crash_mode": active, "message": message}
+
+
+@app.post("/admin/fault/cpu", summary="Trigger CPU stress worker threads")
+def trigger_cpu_fault(duration_seconds: int = 15, num_threads: int = 2):
+    dur = max(1, min(duration_seconds, 60))
+    threads = max(1, min(num_threads, 4))
+    _run_cpu_stress(duration_seconds=dur, num_threads=threads)
+    log_event("WARN", msg=f"cpu stress started: {threads} threads for {dur}s")
+    return {"status": "started", "duration_seconds": dur, "threads": threads}
+
+
+@app.post("/admin/fault/memory", summary="Trigger memory pressure allocation")
+def trigger_memory_fault(megabytes: int = 150, duration_seconds: int = 15):
+    mb = max(10, min(megabytes, 300))
+    dur = max(1, min(duration_seconds, 60))
+    _run_memory_stress(megabytes=mb, duration_seconds=dur)
+    log_event("WARN", msg=f"memory stress started: {mb}MB for {dur}s")
+    return {"status": "started", "megabytes": mb, "duration_seconds": dur}
+
+
+@app.post("/admin/fault/reset", summary="Reset all injected faults")
+def reset_all_faults():
+    STATE["injected_latency"] = 0.0
+    STATE["crash_mode"] = False
+    STATE["bug"] = False
+    STATE["crash_message"] = ""
+    log_event("INFO", msg="all faults cleared and reset to healthy")
+    return {"status": "cleared", "faults": {"bug": False, "crash_mode": False, "injected_latency": 0.0}}
+
 
