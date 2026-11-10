@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculator · DevOps Live Microservice</title>
+  <title>CloudOps Store · DevOps Gear Microservice</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d15;
+      --bg: #090d16;
       --surface: #111827;
       --surface-light: #1f2937;
+      --surface-hover: #263346;
       --border: rgba(255, 255, 255, 0.08);
       --primary: #4f46e5;
       --primary-hover: #6366f1;
@@ -23,567 +24,786 @@
       --text-muted: #94a3b8;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background-color: var(--bg);
       background-image: 
-        radial-gradient(ellipse at 10% 20%, rgba(79, 70, 229, 0.15), transparent 40%),
-        radial-gradient(ellipse at 90% 80%, rgba(56, 189, 248, 0.12), transparent 40%);
+        radial-gradient(ellipse at 15% 10%, rgba(79, 70, 229, 0.12), transparent 45%),
+        radial-gradient(ellipse at 85% 90%, rgba(56, 189, 248, 0.10), transparent 45%);
       color: var(--text);
       font-family: 'DM Sans', sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text);
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--accent-blue));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+    .brand h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .badge-pill {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: currentColor;
+      border-radius: 50%;
+    }
+    .badge-degraded {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+    .cart-btn {
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .cart-btn:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.2); }
+    .cart-count {
+      background: var(--primary);
+      color: white;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 700;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Hero Banner */
+    .hero {
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+    .hero-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5rem;
+    }
+    .hero h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Category Filter */
+    .filters {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Product Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.75rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+    }
+    .card-img-wrap {
+      height: 180px;
+      background: linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.9));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      position: relative;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      background: rgba(79, 70, 229, 0.85);
+      color: white;
+    }
+    .card-body {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .card-category {
+      font-size: 0.75rem;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .card-price {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .add-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: background 0.15s;
+    }
+    .add-btn:hover { background: var(--primary-hover); }
+
+    /* Cart Slide-out Drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 440px;
+      background: #0f172a;
+      border-left: 1px solid var(--border);
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-overlay.open .drawer {
+      transform: translateX(0);
+    }
+    .drawer-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .drawer-header h3 { font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; }
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .drawer-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .cart-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--surface);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .cart-row-info h4 { font-size: 0.95rem; margin-bottom: 0.2rem; }
+    .cart-row-info p { font-size: 0.8rem; color: var(--text-muted); }
+    .cart-row-qty { display: flex; align-items: center; gap: 0.5rem; }
+    .qty-btn {
+      width: 26px;
+      height: 26px;
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+    .drawer-footer {
+      padding: 1.25rem;
+      border-top: 1px solid var(--border);
+      background: rgba(17, 24, 39, 0.5);
+    }
+    .coupon-box {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .coupon-box input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+    }
+    .coupon-box button {
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .price-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.9rem;
+      margin-bottom: 1.25rem;
+    }
+    .price-line {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+    .price-total {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+    .checkout-btn {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.85rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .checkout-btn:hover { background: var(--primary-hover); }
+    .checkout-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Alert Banner */
+    .alert-banner {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--accent-red);
+      color: #fca5a5;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+      display: none;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 200;
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 1.5rem;
     }
-
-    .container {
+    .modal {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 480px;
       width: 100%;
-      max-width: 420px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
+      padding: 2rem;
+      text-align: center;
     }
+    .modal h3 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .modal p { color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
 
-    /* Calculator Card */
-    .calculator-card {
-      background: rgba(17, 24, 39, 0.85);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.75rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(79, 70, 229, 0.15);
-      position: relative;
-    }
-
-    /* Header Bar */
-    .calc-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-    }
-
-    .calc-title {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      background: var(--accent-green);
-      border-radius: 50%;
-      box-shadow: 0 0 10px var(--accent-green);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
-    }
-
-    .version-pill {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.75rem;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border);
-      padding: 0.2rem 0.55rem;
-      border-radius: 9999px;
-      color: var(--accent-blue);
-    }
-
-    /* Display Screen */
-    .display-screen {
-      background: #06090e;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-      text-align: right;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 110px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .history-row {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      min-height: 1.25rem;
-      word-break: break-all;
-    }
-
-    .main-row {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 2.25rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.03em;
-      white-space: nowrap;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
-    .main-row::-webkit-scrollbar {
-      display: none;
-    }
-
-    .status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-family: 'DM Mono', monospace;
-      font-size: 0.7rem;
-      color: #64748b;
-      margin-top: 0.5rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding-top: 0.35rem;
-    }
-
-    .latency-pill {
-      color: var(--accent-green);
-    }
-
-    .latency-pill.err {
-      color: var(--accent-red);
-    }
-
-    /* Keypad Grid */
-    .keypad {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.65rem;
-    }
-
-    .btn {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1.15rem;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 0.85rem 0;
-      background: var(--surface-light);
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-    }
-
-    .btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: translateY(-1px);
-    }
-
-    .btn:active {
-      transform: translateY(1px);
-    }
-
-    .btn-op {
-      background: rgba(56, 189, 248, 0.1);
-      border-color: rgba(56, 189, 248, 0.25);
-      color: var(--accent-blue);
-    }
-
-    .btn-op:hover {
-      background: rgba(56, 189, 248, 0.2);
-    }
-
-    .btn-clear {
-      background: rgba(239, 68, 68, 0.1);
-      border-color: rgba(239, 68, 68, 0.25);
-      color: var(--accent-red);
-    }
-
-    .btn-clear:hover {
-      background: rgba(239, 68, 68, 0.2);
-    }
-
-    .btn-equals {
-      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-      border-color: #6366f1;
-      color: #ffffff;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-    }
-
-    .btn-equals:hover {
-      background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
-    }
-
-    /* Dynamic Features Row */
-    .features-panel {
-      margin-top: 1rem;
-      padding-top: 1rem;
+    /* DevOps Control Bar */
+    .devops-bar {
+      background: #0b0f19;
       border-top: 1px solid var(--border);
-    }
-
-    .features-title {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.5rem;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .features-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .feature-chip {
-      background: rgba(79, 70, 229, 0.12);
-      border: 1px solid rgba(79, 70, 229, 0.3);
-      color: #a5b4fc;
-      padding: 0.35rem 0.75rem;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .feature-chip:hover {
-      background: rgba(79, 70, 229, 0.25);
-      border-color: rgba(79, 70, 229, 0.5);
-    }
-
-    /* Telemetry Footer Card */
-    .telemetry-card {
-      background: rgba(17, 24, 39, 0.65);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 0.85rem 1.25rem;
+      padding: 0.75rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 0.75rem;
     }
-
-    .telemetry-links {
-      display: flex;
-      gap: 0.85rem;
-    }
-
-    .telemetry-links a {
-      color: var(--accent-blue);
+    .devops-bar code { font-family: 'DM Mono', monospace; color: var(--accent-blue); }
+    .devops-actions { display: flex; gap: 0.5rem; }
+    .devops-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.25rem 0.65rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
       text-decoration: none;
-      font-family: 'DM Mono', monospace;
     }
-
-    .telemetry-links a:hover {
-      text-decoration: underline;
-    }
+    .devops-btn:hover { background: var(--surface-light); }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="calculator-card">
-      <div class="calc-header">
-        <div class="calc-title">
-          <div class="pulse-dot"></div>
-          <span>OpsPilot Calculator</span>
-        </div>
-        <div class="version-pill" id="versionBadge">v1.0</div>
+  <!-- Navbar -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">☁️</div>
+      <div>
+        <h1>CloudOps Store</h1>
       </div>
-
-      <!-- LED Display -->
-      <div class="display-screen">
-        <div class="history-row" id="historyDisplay"></div>
-        <div class="main-row" id="mainDisplay">0</div>
-        <div class="status-bar">
-          <span id="opBadge">READY</span>
-          <span class="latency-pill" id="latencyBadge">0 ms</span>
-        </div>
+    </a>
+    <div class="nav-actions">
+      <div class="badge-pill" id="health-pill">
+        <span class="badge-dot"></span>
+        <span id="health-text">v1.0 · Healthy</span>
       </div>
+      <button class="cart-btn" onclick="toggleCart()">
+        🛒 Cart <span class="cart-count" id="cart-count">0</span>
+      </button>
+    </div>
+  </header>
 
-      <!-- Keypad -->
-      <div class="keypad">
-        <button class="btn btn-clear" onclick="clearAll()">C</button>
-        <button class="btn btn-op" onclick="deleteChar()">⌫</button>
-        <button class="btn btn-op" onclick="setOperator('pow', '^')">xʸ</button>
-        <button class="btn btn-op" onclick="setOperator('div', '÷')">÷</button>
-
-        <button class="btn" onclick="appendDigit('7')">7</button>
-        <button class="btn" onclick="appendDigit('8')">8</button>
-        <button class="btn" onclick="appendDigit('9')">9</button>
-        <button class="btn btn-op" onclick="setOperator('mul', '×')">×</button>
-
-        <button class="btn" onclick="appendDigit('4')">4</button>
-        <button class="btn" onclick="appendDigit('5')">5</button>
-        <button class="btn" onclick="appendDigit('6')">6</button>
-        <button class="btn btn-op" onclick="setOperator('sub', '−')">−</button>
-
-        <button class="btn" onclick="appendDigit('1')">1</button>
-        <button class="btn" onclick="appendDigit('2')">2</button>
-        <button class="btn" onclick="appendDigit('3')">3</button>
-        <button class="btn btn-op" onclick="setOperator('add', '+')">+</button>
-
-        <button class="btn" onclick="toggleSign()">±</button>
-        <button class="btn" onclick="appendDigit('0')">0</button>
-        <button class="btn" onclick="appendDecimal()">.</button>
-        <button class="btn btn-equals" onclick="computeResult()">=</button>
-      </div>
-
-      <!-- Dynamic AI Synthesized Features Panel -->
-      <div class="features-panel">
-        <div class="features-title">
-          <span>AI Plugin Features</span>
-          <span id="featuresCount">Loaded: 0</span>
-        </div>
-        <div class="features-grid" id="featuresGrid">
-          <!-- Populated dynamically from /health -->
-        </div>
-      </div>
+  <!-- Main Content -->
+  <main class="container">
+    <div class="hero">
+      <div class="hero-eyebrow">Cloud-Native Microservice Demo</div>
+      <h2>Engineered for High-Velocity DevOps</h2>
+      <p>Simulating real production traffic, continuous telemetry, dynamic coupon plugins, and automated incident triage for multi-agent systems.</p>
     </div>
 
-    <!-- Telemetry Link Bar -->
-    <div class="telemetry-card">
-      <div>Microservice on <code id="hostLabel">Live API</code></div>
-      <div class="telemetry-links">
-        <a href="/health" target="_blank">/health</a>
-        <a href="/metrics" target="_blank">/metrics</a>
-        <a href="/docs" target="_blank">/docs</a>
+    <!-- Category Filters -->
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterCategory('All', this)">All Products</button>
+      <button class="filter-btn" onclick="filterCategory('Hardware', this)">Hardware</button>
+      <button class="filter-btn" onclick="filterCategory('Audio', this)">Audio</button>
+      <button class="filter-btn" onclick="filterCategory('Swag', this)">Swag</button>
+      <button class="filter-btn" onclick="filterCategory('Displays', this)">Displays</button>
+      <button class="filter-btn" onclick="filterCategory('Furniture', this)">Furniture</button>
+    </div>
+
+    <!-- Product Grid -->
+    <div class="grid" id="product-grid">
+      <!-- Injected via JavaScript -->
+    </div>
+  </main>
+
+  <!-- Cart Drawer -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="handleOverlayClick(event)">
+    <div class="drawer" id="drawer">
+      <div class="drawer-header">
+        <h3>Shopping Cart</h3>
+        <button class="close-btn" onclick="toggleCart()">&times;</button>
+      </div>
+
+      <div class="drawer-items" id="cart-items">
+        <!-- Cart rows injected here -->
+      </div>
+
+      <div class="drawer-footer">
+        <div id="checkout-alert" class="alert-banner"></div>
+        <div class="coupon-box">
+          <input type="text" id="coupon-input" placeholder="Coupon Code (e.g. DEVOPS20)">
+          <button onclick="applyCoupon()">Apply</button>
+        </div>
+        <div class="price-breakdown">
+          <div class="price-line"><span>Subtotal</span><span id="subtotal-val">$0.00</span></div>
+          <div class="price-line" id="discount-line" style="display: none; color: var(--accent-green);"><span>Discount</span><span id="discount-val">-$0.00</span></div>
+          <div class="price-line"><span>Shipping</span><span id="shipping-val">$0.00</span></div>
+          <div class="price-line"><span>Est. Tax (8.25%)</span><span id="tax-val">$0.00</span></div>
+          <div class="price-line price-total"><span>Total</span><span id="total-val">$0.00</span></div>
+        </div>
+        <button class="checkout-btn" id="checkout-btn" onclick="checkout()">Checkout Order</button>
       </div>
     </div>
   </div>
 
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="success-modal">
+    <div class="modal">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+      <h3>Order Confirmed!</h3>
+      <p id="modal-desc">Thank you for your order. Inventory was updated and telemetry counters logged.</p>
+      <button class="checkout-btn" onclick="closeModal()">Continue Shopping</button>
+    </div>
+  </div>
+
+  <!-- DevOps Bar -->
+  <footer class="devops-bar">
+    <div>
+      <span>Live Microservice: <code>ecommerce-storefront</code></span> &middot;
+      <span id="active-features">Features: <code>coupon (DEVOPS20)</code></span>
+    </div>
+    <div class="devops-actions">
+      <a href="/metrics" target="_blank" class="devops-btn">/metrics ↗</a>
+      <a href="/health" target="_blank" class="devops-btn">/health ↗</a>
+      <button class="devops-btn" onclick="simulateBug()">Toggle v1.1 Bug</button>
+      <button class="devops-btn" onclick="rollbackVersion()">Rollback v1.0</button>
+    </div>
+  </footer>
+
   <script>
-    let currentInput = "0";
-    let previousInput = null;
-    let selectedOp = null;
-    let opSymbol = "";
-    let justComputed = false;
+    const EMOJI_MAP = {
+      prod_1: "⌨️",
+      prod_2: "🎧",
+      prod_3: "🧸",
+      prod_4: "🖥️",
+      prod_5: "💺",
+      prod_6: "☕"
+    };
 
-    const mainDisplay = document.getElementById("mainDisplay");
-    const historyDisplay = document.getElementById("historyDisplay");
-    const opBadge = document.getElementById("opBadge");
-    const latencyBadge = document.getElementById("latencyBadge");
-    const versionBadge = document.getElementById("versionBadge");
-    const featuresGrid = document.getElementById("featuresGrid");
-    const featuresCount = document.getElementById("featuresCount");
-    const hostLabel = document.getElementById("hostLabel");
+    let allProducts = [];
+    let activeCoupon = null;
 
-    hostLabel.textContent = window.location.host;
+    async function loadProducts(category = 'All') {
+      try {
+        const url = category === 'All' ? '/products' : `/products?category=${encodeURIComponent(category)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        allProducts = data.products || [];
+        renderProducts(allProducts);
+      } catch (err) {
+        console.error("Failed to load products:", err);
+      }
+    }
 
-    function updateDisplay() {
-      mainDisplay.textContent = currentInput;
-      if (previousInput !== null && selectedOp !== null) {
-        historyDisplay.textContent = `${previousInput} ${opSymbol}`;
+    function renderProducts(products) {
+      const grid = document.getElementById("product-grid");
+      grid.innerHTML = products.map(p => `
+        <div class="card">
+          <div class="card-img-wrap">
+            <span>${EMOJI_MAP[p.id] || "📦"}</span>
+            ${p.badge ? `<span class="card-badge">${p.badge}</span>` : ""}
+          </div>
+          <div class="card-body">
+            <span class="card-category">${p.category} &middot; ★ ${p.rating}</span>
+            <h3 class="card-title">${p.name}</h3>
+            <p class="card-desc">${p.description}</p>
+            <div class="card-footer">
+              <span class="card-price">$${p.price.toFixed(2)}</span>
+              <button class="add-btn" onclick="addToCart('${p.id}')">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function filterCategory(cat, btn) {
+      document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      loadProducts(cat);
+    }
+
+    async function loadCart() {
+      try {
+        const url = activeCoupon ? `/cart?coupon_code=${encodeURIComponent(activeCoupon)}` : '/cart';
+        const res = await fetch(url);
+        const data = await res.json();
+        renderCart(data);
+      } catch (err) {
+        console.error("Cart error:", err);
+      }
+    }
+
+    function renderCart(cart) {
+      document.getElementById("cart-count").innerText = cart.item_count || 0;
+      const itemsContainer = document.getElementById("cart-items");
+      if (!cart.items || cart.items.length === 0) {
+        itemsContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); margin-top: 3rem;">Your shopping cart is empty.<br>Select items to begin.</div>';
+        document.getElementById("checkout-btn").disabled = true;
       } else {
-        historyDisplay.textContent = "";
+        document.getElementById("checkout-btn").disabled = false;
+        itemsContainer.innerHTML = cart.items.map(item => `
+          <div class="cart-row">
+            <div class="cart-row-info">
+              <h4>${item.name}</h4>
+              <p>$${item.price.toFixed(2)} &times; ${item.quantity} = <strong>$${item.line_total.toFixed(2)}</strong></p>
+            </div>
+            <div class="cart-row-qty">
+              <button class="qty-btn" onclick="updateQty('${item.product_id}', ${item.quantity - 1})">-</button>
+              <span>${item.quantity}</span>
+              <button class="qty-btn" onclick="updateQty('${item.product_id}', ${item.quantity + 1})">+</button>
+            </div>
+          </div>
+        `).join("");
       }
-    }
 
-    function appendDigit(digit) {
-      if (justComputed) {
-        currentInput = digit;
-        justComputed = false;
-      } else if (currentInput === "0") {
-        currentInput = digit;
+      document.getElementById("subtotal-val").innerText = `$${cart.subtotal.toFixed(2)}`;
+      document.getElementById("shipping-val").innerText = cart.shipping === 0 ? "FREE" : `$${cart.shipping.toFixed(2)}`;
+      document.getElementById("tax-val").innerText = `$${cart.tax.toFixed(2)}`;
+      document.getElementById("total-val").innerText = `$${cart.total.toFixed(2)}`;
+
+      const discLine = document.getElementById("discount-line");
+      if (cart.discount > 0) {
+        discLine.style.display = "flex";
+        document.getElementById("discount-val").innerText = `-$${cart.discount.toFixed(2)}`;
       } else {
-        currentInput += digit;
+        discLine.style.display = "none";
       }
-      updateDisplay();
     }
 
-    function appendDecimal() {
-      if (justComputed) {
-        currentInput = "0.";
-        justComputed = false;
-      } else if (!currentInput.includes(".")) {
-        currentInput += ".";
-      }
-      updateDisplay();
+    async function addToCart(productId) {
+      await fetch('/cart/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, quantity: 1 })
+      });
+      loadCart();
+      toggleCart(true);
     }
 
-    function clearAll() {
-      currentInput = "0";
-      previousInput = null;
-      selectedOp = null;
-      opSymbol = "";
-      justComputed = false;
-      opBadge.textContent = "READY";
-      updateDisplay();
-    }
-
-    function deleteChar() {
-      if (justComputed) {
-        clearAll();
-        return;
-      }
-      if (currentInput.length > 1) {
-        currentInput = currentInput.slice(0, -1);
+    async function updateQty(productId, qty) {
+      if (qty <= 0) {
+        await fetch(`/cart/items/${encodeURIComponent(productId)}`, { method: 'DELETE' });
       } else {
-        currentInput = "0";
-      }
-      updateDisplay();
-    }
-
-    function toggleSign() {
-      if (currentInput !== "0") {
-        if (currentInput.startsWith("-")) {
-          currentInput = currentInput.slice(1);
-        } else {
-          currentInput = "-" + currentInput;
-        }
-        updateDisplay();
-      }
-    }
-
-    function setOperator(op, symbol) {
-      if (previousInput !== null && selectedOp !== null && !justComputed) {
-        computeResult().then(() => {
-          previousInput = currentInput;
-          selectedOp = op;
-          opSymbol = symbol;
-          opBadge.textContent = `OP: ${op.toUpperCase()}`;
-          justComputed = true;
-          updateDisplay();
+        await fetch('/cart/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: productId, quantity: qty })
         });
-        return;
       }
-      previousInput = currentInput;
-      selectedOp = op;
-      opSymbol = symbol;
-      opBadge.textContent = `OP: ${op.toUpperCase()}`;
-      justComputed = true;
-      updateDisplay();
+      loadCart();
     }
 
-    async function computeResult() {
-      if (selectedOp === null || previousInput === null) return;
-      const a = parseFloat(previousInput);
-      const b = parseFloat(currentInput);
+    function toggleCart(forceOpen = false) {
+      const overlay = document.getElementById("drawer-overlay");
+      if (forceOpen || !overlay.classList.contains("open")) {
+        overlay.classList.add("open");
+        loadCart();
+      } else {
+        overlay.classList.remove("open");
+      }
+    }
 
-      opBadge.textContent = "CALCULATING...";
-      const t0 = performance.now();
+    function handleOverlayClick(e) {
+      if (e.target.id === "drawer-overlay") toggleCart(false);
+    }
+
+    function applyCoupon() {
+      const code = document.getElementById("coupon-input").value.trim();
+      activeCoupon = code || null;
+      loadCart();
+    }
+
+    async function checkout() {
+      const alertBox = document.getElementById("checkout-alert");
+      alertBox.style.display = "none";
+      const btn = document.getElementById("checkout-btn");
+      btn.innerText = "Processing Order...";
+      btn.disabled = true;
 
       try {
-        const resp = await fetch(`/calc/${selectedOp}?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
-        const elapsed = Math.round(performance.now() - t0);
-        latencyBadge.textContent = `${elapsed} ms`;
-        latencyBadge.className = resp.ok ? "latency-pill" : "latency-pill err";
+        const res = await fetch('/orders/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_name: "Ashwith Goud",
+            coupon_code: activeCoupon
+          })
+        });
 
-        const data = await resp.json();
-        if (!resp.ok) {
-          throw new Error(data.detail || `Error ${resp.status}`);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || "Checkout failed");
         }
 
-        historyDisplay.textContent = `${a} ${opSymbol} ${b} =`;
-        currentInput = String(data.result);
-        previousInput = null;
-        selectedOp = null;
-        opSymbol = "";
-        justComputed = true;
-        opBadge.textContent = "SUCCESS (200)";
-        updateDisplay();
+        // Show Success Modal
+        toggleCart(false);
+        document.getElementById("modal-desc").innerText = `Order ${data.order_id} placed successfully for $${data.order.total.toFixed(2)}. Telemetry counters logged to Prometheus.`;
+        document.getElementById("success-modal").style.display = "flex";
+        loadCart();
       } catch (err) {
-        historyDisplay.textContent = `${a} ${opSymbol} ${b} =`;
-        currentInput = "Error";
-        opBadge.textContent = err.message.slice(0, 24);
-        justComputed = true;
-        updateDisplay();
+        alertBox.innerText = `Checkout Error: ${err.message}`;
+        alertBox.style.display = "block";
+      } finally {
+        btn.innerText = "Checkout Order";
+        btn.disabled = false;
       }
     }
 
-    async function executeUnaryFeature(op, symbol) {
-      const a = parseFloat(currentInput);
-      opBadge.textContent = `FEATURE: ${op.toUpperCase()}...`;
-      const t0 = performance.now();
-
-      try {
-        const resp = await fetch(`/calc/${op}?a=${encodeURIComponent(a)}`);
-        const elapsed = Math.round(performance.now() - t0);
-        latencyBadge.textContent = `${elapsed} ms`;
-        latencyBadge.className = resp.ok ? "latency-pill" : "latency-pill err";
-
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.detail || `Error ${resp.status}`);
-
-        historyDisplay.textContent = `${symbol}(${a}) =`;
-        currentInput = String(data.result);
-        justComputed = true;
-        opBadge.textContent = "SUCCESS (200)";
-        updateDisplay();
-      } catch (err) {
-        historyDisplay.textContent = `${symbol}(${a}) =`;
-        currentInput = "Error";
-        opBadge.textContent = err.message.slice(0, 24);
-        justComputed = true;
-        updateDisplay();
-      }
+    function closeModal() {
+      document.getElementById("success-modal").style.display = "none";
     }
 
-    // Keyboard support
-    window.addEventListener("keydown", (e) => {
-      if (e.key >= "0" && e.key <= "9") appendDigit(e.key);
-      else if (e.key === ".") appendDecimal();
-      else if (e.key === "+") setOperator("add", "+");
-      else if (e.key === "-") setOperator("sub", "−");
-      else if (e.key === "*") setOperator("mul", "×");
-      else if (e.key === "/") { e.preventDefault(); setOperator("div", "÷"); }
-      else if (e.key === "Enter" || e.key === "=") { e.preventDefault(); computeResult(); }
-      else if (e.key === "Backspace") deleteChar();
-      else if (e.key === "Escape") clearAll();
-    });
-
-    // Fetch live service health & features
-    async function fetchHealth() {
+    async function checkHealth() {
       try {
-        const resp = await fetch("/health");
-        if (resp.ok) {
-          const data = await resp.json();
-          versionBadge.textContent = `v${data.version || "1.0"}`;
-          
-          const builtIn = new Set(["add", "sub", "mul", "div", "pow"]);
-          const plugins = (data.operations || []).filter(op => !builtIn.has(op));
-          featuresCount.textContent = `Plugins: ${plugins.length}`;
-
-          featuresGrid.innerHTML = "";
-          if (plugins.length === 0) {
-            featuresGrid.innerHTML = '<span style="font-size:0.75rem; color:#64748b;">No plugins synthesized yet. Use Code Agent Feature Studio to add custom operations!</span>';
-          } else {
-            plugins.forEach(plugin => {
-              const chip = document.createElement("button");
-              chip.className = "feature-chip";
-              chip.textContent = `${plugin}()`;
-              chip.onclick = () => executeUnaryFeature(plugin, plugin);
-              featuresGrid.appendChild(chip);
-            });
-          }
+        const res = await fetch('/health');
+        const data = await res.json();
+        const pill = document.getElementById("health-pill");
+        const txt = document.getElementById("health-text");
+        if (data.status === 'ok') {
+          pill.className = "badge-pill";
+          txt.innerText = `v${data.version} · Healthy`;
+        } else {
+          pill.className = "badge-pill badge-degraded";
+          txt.innerText = `v${data.version} · Degraded (${JSON.stringify(data.faults)})`;
         }
-      } catch (err) {
-        console.warn("Health check error:", err);
-      }
+      } catch (e) {}
     }
 
-    fetchHealth();
-    setInterval(fetchHealth, 5000);
+    async function simulateBug() {
+      await fetch('/admin/deploy?version=1.1&bug=true', { method: 'POST' });
+      checkHealth();
+      alert("Deployed v1.1 with synthetic Payment Gateway regression. Checkouts will now fail with HTTP 500.");
+    }
+
+    async function rollbackVersion() {
+      await fetch('/admin/rollback', { method: 'POST' });
+      checkHealth();
+      alert("Rolled back to v1.0. System restored to healthy baseline.");
+    }
+
+    // Init
+    loadProducts();
+    loadCart();
+    checkHealth();
+    setInterval(checkHealth, 10000);
   </script>
 </body>
 </html>
-
