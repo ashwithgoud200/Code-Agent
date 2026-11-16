@@ -598,15 +598,22 @@
       prod_6: "☕"
     };
 
+    let masterCatalog = [];
     let allProducts = [];
     let activeCoupon = null;
 
     async function loadProducts(category = 'All') {
       try {
-        const url = category === 'All' ? '/products' : `/products?category=${encodeURIComponent(category)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        allProducts = data.products || [];
+        if (masterCatalog.length === 0) {
+          const res = await fetch('/products');
+          const data = await res.json();
+          masterCatalog = data.products || [];
+        }
+        if (category === 'All') {
+          allProducts = masterCatalog;
+        } else {
+          allProducts = masterCatalog.filter(p => p.category.toLowerCase() === category.toLowerCase());
+        }
         renderProducts(allProducts);
       } catch (err) {
         console.error("Failed to load products:", err);

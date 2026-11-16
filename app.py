@@ -27,6 +27,7 @@ import time
 import uuid
 from typing import Any
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -146,6 +147,8 @@ INITIAL_PRODUCTS: dict[str, dict[str, Any]] = {
     },
 }
 
+STATE_LOCK = threading.RLock()
+
 # Runtime In-Memory State
 STATE: dict[str, Any] = {
     "version": "1.0",
@@ -157,6 +160,7 @@ STATE: dict[str, Any] = {
     "products": dict(INITIAL_PRODUCTS),
     "cart": {},  # product_id -> quantity
     "orders": [],
+    "orders_by_id": {},  # O(1) indexed order dictionary
 }
 
 # Sync initial stock levels to Prometheus
@@ -216,6 +220,7 @@ app = FastAPI(
     description="Target production store managed, monitored, and automated by DevOps Multi-Agent System.",
     version="1.0.0",
 )
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 STATIC_DIR = os.path.join(ROOT, "static")
 if os.path.isdir(STATIC_DIR):
@@ -262,7 +267,7 @@ async def telemetry_middleware(request: Request, call_next):
 def serve_storefront_ui():
     index_file = os.path.join(ROOT, "static", "index.html")
     if os.path.isfile(index_file):
-        return FileResponse(index_file)
+        return FileResponse(index_file, headers={"Cache-Control": "public, max-age=3600"})
     return {
         "status": "ok",
         "service": "ecommerce-storefront",
@@ -357,25 +362,28 @@ def add_cart_item(req: CartItemRequest):
     if prod["stock"] < req.quantity:
         raise HTTPException(400, f"Insufficient stock for '{prod['name']}'. Available: {prod['stock']}")
 
-    STATE["cart"][req.product_id] = req.quantity
-    CART_ITEMS_GAUGE.set(sum(STATE["cart"].values()))
+    with STATE_LOCK:
+        STATE["cart"][req.product_id] = req.quantity
+        CART_ITEMS_GAUGE.set(sum(STATE["cart"].values()))
     log_event("INFO", event="cart_updated", product_id=req.product_id, quantity=req.quantity)
     return get_cart()
 
 
 @app.delete("/cart/items/{product_id}", summary="Remove item from shopping cart")
 def remove_cart_item(product_id: str):
-    if product_id in STATE["cart"]:
-        del STATE["cart"][product_id]
-        CART_ITEMS_GAUGE.set(sum(STATE["cart"].values()))
-        log_event("INFO", event="cart_item_removed", product_id=product_id)
+    with STATE_LOCK:
+        if product_id in STATE["cart"]:
+            del STATE["cart"][product_id]
+            CART_ITEMS_GAUGE.set(sum(STATE["cart"].values()))
+            log_event("INFO", event="cart_item_removed", product_id=product_id)
     return get_cart()
 
 
 @app.delete("/cart", summary="Clear entire shopping cart")
 def clear_cart():
-    STATE["cart"].clear()
-    CART_ITEMS_GAUGE.set(0)
+    with STATE_LOCK:
+        STATE["cart"].clear()
+        CART_ITEMS_GAUGE.set(0)
     return {"status": "cleared", "items": [], "total": 0.0}
 
 
@@ -404,43 +412,45 @@ def checkout_order(req: CheckoutRequest):
         ORDERS_TOTAL.labels(status="failed", payment_method=req.payment_method).inc()
         raise HTTPException(500, err_msg)
 
-    # Validate inventory & prepare line items
-    cart_summary = get_cart(coupon_code=req.coupon_code)
-    order_items = []
-    for item in cart_summary["items"]:
-        prod = STATE["products"][item["product_id"]]
-        if prod["stock"] < item["quantity"]:
-            raise HTTPException(400, f"Stock depleted for '{prod['name']}' during checkout.")
-        # Deduct stock
-        prod["stock"] -= item["quantity"]
-        INVENTORY_STOCK_GAUGE.labels(product_id=prod["id"], category=prod["category"]).set(prod["stock"])
-        order_items.append(dict(item))
+    with STATE_LOCK:
+        # Validate inventory & prepare line items
+        cart_summary = get_cart(coupon_code=req.coupon_code)
+        order_items = []
+        for item in cart_summary["items"]:
+            prod = STATE["products"][item["product_id"]]
+            if prod["stock"] < item["quantity"]:
+                raise HTTPException(400, f"Stock depleted for '{prod['name']}' during checkout.")
+            # Deduct stock
+            prod["stock"] -= item["quantity"]
+            INVENTORY_STOCK_GAUGE.labels(product_id=prod["id"], category=prod["category"]).set(prod["stock"])
+            order_items.append(dict(item))
 
-    order_id = f"ord-{uuid.uuid4().hex[:8]}"
-    order_record = {
-        "order_id": order_id,
-        "customer_name": req.customer_name,
-        "customer_email": req.customer_email,
-        "items": order_items,
-        "item_count": cart_summary["item_count"],
-        "subtotal": cart_summary["subtotal"],
-        "discount": cart_summary["discount"],
-        "shipping": cart_summary["shipping"],
-        "tax": cart_summary["tax"],
-        "total": cart_summary["total"],
-        "payment_method": req.payment_method,
-        "status": "confirmed",
-        "version": STATE["version"],
-        "created_at": time.time(),
-    }
+        order_id = f"ord-{uuid.uuid4().hex[:8]}"
+        order_record = {
+            "order_id": order_id,
+            "customer_name": req.customer_name,
+            "customer_email": req.customer_email,
+            "items": order_items,
+            "item_count": cart_summary["item_count"],
+            "subtotal": cart_summary["subtotal"],
+            "discount": cart_summary["discount"],
+            "shipping": cart_summary["shipping"],
+            "tax": cart_summary["tax"],
+            "total": cart_summary["total"],
+            "payment_method": req.payment_method,
+            "status": "confirmed",
+            "version": STATE["version"],
+            "created_at": time.time(),
+        }
 
-    STATE["orders"].append(order_record)
-    STATE["cart"].clear()
-    CART_ITEMS_GAUGE.set(0)
+        STATE["orders"].append(order_record)
+        STATE.setdefault("orders_by_id", {})[order_id] = order_record
+        STATE["cart"].clear()
+        CART_ITEMS_GAUGE.set(0)
 
-    ORDERS_TOTAL.labels(status="completed", payment_method=req.payment_method).inc()
-    REVENUE_TOTAL.inc(order_record["total"])
-    log_event("INFO", event="order_completed", order_id=order_id, total=order_record["total"])
+        ORDERS_TOTAL.labels(status="completed", payment_method=req.payment_method).inc()
+        REVENUE_TOTAL.inc(order_record["total"])
+        log_event("INFO", event="order_completed", order_id=order_id, total=order_record["total"])
 
     return {
         "status": "confirmed",
@@ -452,17 +462,22 @@ def checkout_order(req: CheckoutRequest):
 
 @app.get("/orders", summary="Get recent order history")
 def list_orders():
-    return {
-        "total": len(STATE["orders"]),
-        "orders": list(reversed(STATE["orders"][-20:])),
-    }
+    with STATE_LOCK:
+        return {
+            "total": len(STATE["orders"]),
+            "orders": list(reversed(STATE["orders"][-20:])),
+        }
 
 
 @app.get("/orders/{order_id}", summary="Get order details by ID")
 def get_order(order_id: str):
-    for o in STATE["orders"]:
-        if o["order_id"] == order_id:
-            return o
+    with STATE_LOCK:
+        if "orders_by_id" in STATE and order_id in STATE["orders_by_id"]:
+            return STATE["orders_by_id"][order_id]
+        for o in STATE["orders"]:
+            if o["order_id"] == order_id:
+                STATE.setdefault("orders_by_id", {})[order_id] = o
+                return o
     raise HTTPException(404, f"Order '{order_id}' not found.")
 
 
