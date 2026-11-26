@@ -1,4 +1,4 @@
-"""Seasonal Discount implementation for Calculator application."""
+"""Seasonal Coupon (20% Off) implementation for Calculator application."""
 import math
 
 # Feature Code synthesized by Code Agent (openai/gpt-oss-120b)
