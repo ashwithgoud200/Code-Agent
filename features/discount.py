@@ -1,4 +1,4 @@
-"""Seasonal Coupon (20% Off) implementation for Calculator application."""
+"""Coupon MADHAV (25% Off) implementation for Calculator application."""
 import math
 
 # Feature Code synthesized by Code Agent (openai/gpt-oss-120b)
